@@ -1,3 +1,15 @@
+# Data & S3 ignore
+*.xml
+*.json
+*.csv
+data/
+
+# SageMaker/Jupyter system files
+.ipynb_checkpoints/
+__pycache__/
+.env
+.aws/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
