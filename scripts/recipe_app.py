@@ -1,6 +1,9 @@
 import streamlit as st
 import requests
+import os
 
+
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 # -----------------------
 # Page config
 # -----------------------
@@ -223,8 +226,9 @@ if question:
 
         try:
             response = requests.post(
-                "http://127.0.0.1:8000/ask",
-                json={"question": question}
+                f"{API_URL}/ask",
+                json={"question": question},
+                timeout=30
             )
             response.raise_for_status()
 
