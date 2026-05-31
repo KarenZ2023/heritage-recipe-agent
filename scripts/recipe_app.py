@@ -176,11 +176,11 @@ Discover how Americans cooked, baked, and entertained in the
 <b>Try asking:</b>
 
 <ul>
-<li>Beef soups from the 1800s</li>
-<li>Historic apple pie recipes</li>
-<li>19th-century cocktails</li>
-<li>Vegetable dishes from the late 1800s</li>
-<li>Recipes containing oysters</li>
+<li>What were common breakfast dishes in the early days?</li>
+<li>What kinds of coffee drinks were popular in old recipes?</li>
+<li>What fruit cocktails were traditionally made?</li>
+<li>How was chicken soup prepared?</li>
+<li>What were some traditional bread loaf recipes?</li>
 </ul>
 
 </div>
