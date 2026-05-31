@@ -1,6 +1,8 @@
+
 # Data & S3 ignore
 *.xml
 *.json
+!embedded_recipe_ids.json
 *.csv
 data/
 
