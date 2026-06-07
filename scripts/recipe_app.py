@@ -24,7 +24,7 @@ st.markdown("""
    ========================= */
 .stApp {
     background-color: #f7f3ec;
-    background-image: url("https://images.unsplash.com/vector-1761241810096-982ff36403b7?q=80&w=2068&auto=format&fit=crop&ixlib=rb-4.1.0");
+    background-image: url("https://images.unsplash.com/vector-1748759599217-7117315fb1f3?q=80&w=2360&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -195,7 +195,7 @@ Discover how Americans cooked, baked, and entertained in the
 st.markdown("""
 <div class="search-card">
     <div class="search-title">
-        🔍 Ask a question about historic recipes 🥕 🌽 🥔 🧄
+        🧄🍄‍🟫🌶️ Ask a question about historic recipes 🥕 🌽 🥔 
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -228,7 +228,8 @@ if question:
             response = requests.post(
                 f"{API_URL}/ask",
                 json={"question": question},
-                timeout=30
+                #increase request time. ~30s delay for Render Free
+                timeout=120
             )
             response.raise_for_status()
 
