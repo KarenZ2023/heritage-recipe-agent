@@ -4,6 +4,10 @@
 
 Historic Recipe Explorer is a Retrieval-Augmented Generation (RAG) application that enables users to search and explore historic American cookbooks using natural language. Instead of manually browsing thousands of pages, users can ask questions about ingredients, dishes, cooking methods, or historical food trends and receive relevant recipes sourced directly from historic texts.
 
+Visit the [Historic Reciper Explorer App](https://historic-recipe-explorer.streamlit.app/) to ask questions about historic recipes.
+
+<img width="1272" height="890" alt="image" src="https://github.com/user-attachments/assets/dd7511a8-c03e-49c4-bf35-35a58e6b10c8" />
+
 ## Dataset
 
 This project uses recipes from Feeding America: The Historic American Cookbook Dataset, a collection of 76 historic American cookbooks spanning the 18th and 19th centuries.
