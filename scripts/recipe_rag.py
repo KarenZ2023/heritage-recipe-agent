@@ -147,7 +147,25 @@ class RecipeRAG:
 
     def calculate_lexical_score(self, query, recipe):
         """
-        Lexical scoring between query and recipe.
+        Calculates a lexical match score and strength between a query and a recipe.
+
+        Parses the query to isolate food terms using `IngredientSlicer`, then 
+        performs a word-frequency count against the recipe's title and ingredients. 
+        Matches in the title are heavily weighted (10x) compared to matches in the 
+        ingredients list (2x). Based on these individual scores, a categorical 
+        match strength is determined.
+
+        Args:
+            query (str): The user's search query or recipe input string.
+            recipe (dict): A dictionary containing recipe data. Expected keys 
+                include 'recipe_title' (str) and 'recipe_ingredients' (list of str).
+
+        Returns:
+            tuple: A tuple containing two elements:
+                - match_score (int): The total calculated lexical score from both 
+                  title and ingredient matches.
+                - match_strength (str): The categorical quality of the match 
+                  ('strong', 'medium', or 'weak').
         """
 
         query_recipe_obj = ingredient_slicer.IngredientSlicer(query)
@@ -164,10 +182,7 @@ class RecipeRAG:
         title_score = 0
         ingredient_score = 0
     
-        # -------------------------
         # Word-frequency scoring
-        # -------------------------
-        #print("QUERY TERMS", query_recipe_terms)
         for term in query_recipe_terms:
             for word in term.split():
     
@@ -177,9 +192,7 @@ class RecipeRAG:
                 # ingredient match (weaker signal)
                 ingredient_score += ingredient_words.count(word) * 2
     
-        # -------------------------
         # Final score 
-        # -------------------------
         match_score = title_score + ingredient_score
 
         #strong match if > 2 query terms match the title. >10 points
@@ -189,17 +202,40 @@ class RecipeRAG:
             match_strength = "medium"
         else:
             match_strength = "weak"
-
-        # print("RECIPE:", recipe["recipe_title"])
-        # print("TITLE SCORE:", title_score)
-        # print("ING SCORE:", ingredient_score)
-        # print("LEX SCORE:", match_score)
-        # print("MATCH STRENGTH: ", match_strength)
-        
     
         return match_score, match_strength
 
     def retrieve_recipes(self, query, n_recipes=3):
+        """Retrieves and ranks recipes using a hybrid vector and lexical scoring pipeline.
+
+        Generates a vector embedding for the query and fetches the top 25 candidate 
+        vectors from the vector database. For each candidate, the corresponding 
+        cookbook is fetched from S3 (using an in-memory cache to prevent redundant 
+        S3 requests) to extract the full recipe. 
+        
+        Candidates are then re-ranked based on a combined score consisting of:
+        1. A lexical match score against the recipe title and ingredients.
+        2. A vector rank bonus inversely proportional to its original vector distance rank.
+
+        Args:
+            query (str): The search query or text string to match against recipes.
+            n_recipes (int, optional): The maximum number of top-ranked recipes 
+                to return. Defaults to 3.
+
+        Returns:
+            dict: A dictionary containing the top `n_recipes`, keyed by their unique 
+                `recipe_id`. Each value is a nested dictionary with the following structure:
+                
+                {
+                    "vector_rank": int (1-indexed rank from the vector search),
+                    "lexical_score": int (score from keyword matching),
+                    "vector_bonus": int (calculated as 25 - vector_rank),
+                    "final_score": int (lexical_score + vector_bonus),
+                    "match_strength": str ('strong', 'medium', or 'weak'),
+                    "recipe": dict (raw recipe data),
+                    "book_metadata": dict (metadata of the parent cookbook)
+                }
+        """
 
         top_k = 25
         
@@ -216,12 +252,8 @@ class RecipeRAG:
         vectors = response.get("vectors", [])
         cookbook_cache = {}
         recipes = {}
-    
-    
-    
-        # -------------------------
-        # Build candidates
-        # -------------------------
+
+        #score recipes from semantic search
         for i, vector in enumerate(vectors):
     
             metadata = vector.get("metadata", {})
@@ -231,9 +263,7 @@ class RecipeRAG:
             if not recipe_id or not s3_key:
                 continue
     
-            # -------------------------
             # Load cookbook (cached)
-            # -------------------------
             if s3_key not in cookbook_cache:
                 obj = self.s3.get_object(
                     Bucket=self.source_bucket,
@@ -249,20 +279,14 @@ class RecipeRAG:
             if not recipe:
                 continue
     
-            # -------------------------
             # Lexical score
-            # -------------------------
             lexical_score, strength = self.calculate_lexical_score(query, recipe)
     
-            # -------------------------
             # Vector rank boost
-            # -------------------------
             vector_rank = i + 1
             vector_bonus = top_k - vector_rank
     
-            # -------------------------
-            # FINAL HYBRID SCORE
-            # -------------------------
+            #final score
             final_score = lexical_score + vector_bonus
     
             recipes[recipe_id] = {
@@ -275,9 +299,6 @@ class RecipeRAG:
                 "book_metadata": cookbook.get("metadata", {})
             }
     
-        # -------------------------
-        # Sort by final score
-        # -------------------------
         sorted_recipes = dict(
             sorted(
                 recipes.items(),
@@ -337,7 +358,23 @@ class RecipeRAG:
 
     def build_user_prompt(self, query, context, n_recipes):
         """
-        Build the user prompt for the LLM.
+        Build the user prompt used for recipe generation.
+
+        Constructs a prompt containing the user's question, retrieved
+        recipe context, formatting requirements, and generation rules.
+        The prompt instructs the language model to return the most
+        relevant recipes in a consistent Markdown format, including
+        recipe metadata, ingredients, modernized instructions, and
+        original instructions.
+    
+        Args:
+            query (str): User's natural language question.
+            context (str): Retrieved recipe content provided as context
+                for the language model.
+            n_recipes (int): Maximum number of recipes to return.
+    
+        Returns:
+            str: Fully formatted prompt for the language model.
         """
     
         return f"""
@@ -390,16 +427,16 @@ class RecipeRAG:
             - Ingredient 2
             - Ingredient 3
             
-            **Original Instructions:**
-            
-            (Original recipe instructions exactly as provided.)
-            
-            **Modern Instructions:**
+            **Modified Instructions:**
             
             1. Rewrite the instructions using modern cooking language.
             2. Preserve the original ingredients and intent.
             3. Use numbered steps.
             4. Do not invent ingredients that are not present in the recipe.
+
+            **Original Instructions:**
+            
+            (Original recipe instructions exactly as provided.)
             
             ---
             

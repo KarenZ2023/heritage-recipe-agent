@@ -255,6 +255,17 @@ class RecipeEmbedding:
 def main():
     """
     Run the recipe embedding pipeline.
+
+    Loads processed cookbook JSON files from S3, generates embeddings
+    for individual recipes, and stores the embeddings in an S3 Vector
+    index. Optionally resets the vector infrastructure before processing.
+
+    Args:
+        --src-bucket: S3 bucket containing processed cookbook JSON files.
+        --vec-bucket: S3 vector bucket used to store recipe embeddings.
+        --index: Name of the vector index.
+        --reset: If provided, deletes the existing vector index and
+            embedding tracker before rebuilding.
     """
     parser = argparse.ArgumentParser(
         description="Recipe Embedding Pipeline"

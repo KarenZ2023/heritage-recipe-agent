@@ -10,7 +10,7 @@ Visit the [Historic Reciper Explorer App](https://historic-recipe-explorer.strea
 
 ## Dataset
 
-This project uses recipes from Feeding America: The Historic American Cookbook Dataset, a collection of 76 historic American cookbooks spanning the 18th and 19th centuries.
+This project uses recipes from [Feeding America: The Historic American Cookbook Dataset](https://lib.msu.edu/feedingamericadata), a collection of 76 historic American cookbooks spanning the late 18th and early 20th centuries. There are over 46,000 recipes!
 
 The dataset includes:
 

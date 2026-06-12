@@ -192,7 +192,24 @@ class BookParser:
         return self.book_dict
 
 def main():
-    """Main execution block to process cookbooks from S3 bucket."""
+    """Parses cookbook XML files from S3 and exports recipes to JSON.
+
+    Iterates through XML files in a designated S3 bucket, extracts recipe data, 
+    and aggregates them into per-file dictionaries. If a cookbook contains one 
+    or more recipes, the dictionary is serialized to JSON and uploaded back to S3.
+
+    Args:
+        --book_limit (int): Number of books to process. Defaults to 0 (all books).
+        --bucket (str): Name of the S3 bucket. Defaults to 
+            'feeding-america-historic-cookbooks'.
+        --input_folder (str): S3 folder name containing the cookbook XMLs. 
+            Defaults to 'cookbook_textencoded'.
+        --output_folder (str): S3 folder name where the processed JSONs 
+            will be saved. Defaults to 'processed_cookbooks'.
+
+    Returns:
+        None.
+    """
     
     parser = argparse.ArgumentParser(description="Parse cookbooks from S3.")
     parser.add_argument("--book_limit", type=int, default=0, help="Number of books to process")
@@ -209,6 +226,7 @@ def main():
     pages = paginator.paginate(Bucket=args.bucket, Prefix=input_prefix)
 
     #read contents of the input XML folder
+    # count current books being parsed, excluding previously processed ones.
     book_count = 0
     for page in pages:
         if 'Contents' not in page:
@@ -217,7 +235,7 @@ def main():
         for obj in page['Contents']:
             source_key = obj['Key']
     
-            # Skip the folder itself
+            # skip the folder itself
             if source_key == input_prefix:
                 continue
     
@@ -230,36 +248,35 @@ def main():
             book_name = os.path.splitext(file_name)[0]
 
             try:
-                # 1. Check if the JSON file already exists
+                # check if book is already parsed into a json file
                 json_key = f'{output_prefix}{book_name}.json'
                 
                 try:
                     s3.head_object(Bucket=args.bucket, Key=json_key)
                     print(f"  - '{json_key}' has already been parsed. Skipping.")
-                    continue  # Safely skips to next book without affecting your limit count!
+                    continue  
                     
                 except botocore.exceptions.ClientError as e:
                     if e.response['Error']['Code'] != "404":
                         raise  
             
-                # This ensures we only count books we are ACTUALLY processing right now
                 book_count += 1
                 if args.book_limit > 0 and book_count > args.book_limit:
                     print(f"Reached limit of {args.book_limit} newly processed books. Exiting.")
                     return 
 
-                # 2. Download and parse the XML
+                # download and parse the XML file
                 response = s3.get_object(Bucket=args.bucket, Key=source_key)
                 book_xml = response["Body"].read()
                 
                 parser = BookParser(book_xml)
                 book_dict = parser.book_to_dict()
             
-                # 3. Check recipe count
+                # skip writing to JSON if the book has no recipes.
                 if book_dict.get("recipe_num", 0) == 0:
                     print(f'  - No valid recipes found. Skipping JSON creation.\n')
                 else:
-                    # 4. Upload to S3
+                    # save cookbook dict as JSON
                     json_content = json.dumps(book_dict, indent=4, ensure_ascii=False)
             
                     s3.put_object(

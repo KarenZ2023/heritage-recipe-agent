@@ -228,7 +228,7 @@ if question:
             response = requests.post(
                 f"{API_URL}/ask",
                 json={"question": question},
-                #increase request time. ~30s delay for Render Free
+                #increase request time. ~60s delay for Render Free
                 timeout=120
             )
             response.raise_for_status()
